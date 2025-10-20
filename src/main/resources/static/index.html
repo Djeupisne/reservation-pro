@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Reservation Agency</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and ReactDOM CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <!-- Babel CDN for JSX -->
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.15/babel.min.js"></script>
+    <!-- Axios CDN for API calls -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.4.0/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      // Configure Axios base URL (update to match your backend)
+      axios.defaults.baseURL = "http://localhost:8080";
+
+      const { useState, useEffect, createContext, useContext } = React;
+
+      // Auth Context for managing user state
+      const AuthContext = createContext();
+      const AuthProvider = ({ children }) => {
+        const [user, setUser] = useState(null); // { token, role, id_client }
+        const login = async (login, password) => {
+          try {
+            const response = await axios.post("/api/auth/login", {
+              login,
+              mot_passe: password,
+            });
+            setUser({
+              token: response.data.token,
+              role: response.data.role,
+              id_client: response.data.id_client,
+            });
+            localStorage.setItem("token", response.data.token);
+          } catch (error) {
+            console.error("Login failed:", error);
+            alert("Invalid credentials");
+          }
+        };
+        const logout = () => {
+          setUser(null);
+          localStorage.removeItem("token");
+        };
+        return (
+          <AuthContext.Provider value={{ user, login, logout }}>
+            {children}
+          </AuthContext.Provider>
+        );
+      };
+
+      // Navbar Component
+      const Navbar = () => {
+        const { user, logout } = useContext(AuthContext);
+        return (
+          <nav className="bg-blue-600 p-4 text-white flex justify-between">
+            <h1 className="text-xl font-bold">Agence de Voyage</h1>
+            <div className="space-x-4">
+              <a href="#/" className="hover:underline">
+                Accueil
+              </a>
+              {!user && (
+                <>
+                  <a href="#/login" className="hover:underline">
+                    Connexion
+                  </a>
+                  <a href="#/register" className="hover:underline">
+                    Inscription
+                  </a>
+                </>
+              )}
+              <a href="#/contact" className="hover:underline">
+                Contact
+              </a>
+              {user && (
+                <button
+                  onClick={logout}
+                  className="bg-red-500 px-3 py-1 rounded"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
+          </nav>
+        );
+      };
+
+      // Home Component
+      const Home = ({ navigate }) => {
+        const destinations = [
+          {
+            id: 1,
+            image: "https://via.placeholder.com/300x200",
+            name: "Paris",
+            desc: "La Ville Lumière est célèbre pour ses monuments emblématiques comme la Tour Eiffel, le Louvre et Notre-Dame. Son ambiance romantique et sa gastronomie raffinée en font une destination prisée",
+            price: "1000.98 €",
+          },
+          {
+            id: 2,
+            image: "https://via.placeholder.com/300x200",
+            name: "New York",
+            desc: "La ville qui ne dort jamais ! Entre Times Square, Central Park et Broadway, New York offre une énergie unique et une diversité culturelle impressionnante",
+            price: "2006.52 €",
+          },
+          {
+            id: 3,
+            image: "https://via.placeholder.com/300x200",
+            name: "Tokyo",
+            desc: "Un mélange fascinant de tradition et de modernité. Des temples anciens côtoient des gratte-ciels futuristes, et la cuisine japonaise y est une expérience incontournable",
+            price: "8000.00 €",
+          },
+        ];
+        return (
+          <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
+            <h2 className="text-2xl font-bold mb-4 text-center mt-8">
+              Nos Destinations
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {destinations.map((dest) => (
+                <div
+                  key={dest.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden"
+                >
+                  <img
+                    src={dest.image}
+                    alt={dest.name}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="text-xl font-semibold text-blue-700">
+                      {dest.name}
+                    </h3>
+                    <p className="text-gray-600 mb-4">{dest.desc}</p>
+                    <p className="text-gray-800 font-bold mb-2">
+                      Prix : {dest.price}
+                    </p>
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 w-full"
+                    >
+                      Connectez-vous pour réserver
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      // Login Component
+      const Login = ({ navigate }) => {
+        const { login } = useContext(AuthContext);
+        const [credentials, setCredentials] = useState({
+          login: "",
+          password: "",
+        });
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          await login(credentials.login, credentials.password);
+          navigate(credentials.role === "admin" ? "/admin" : "/");
+        };
+        return (
+          <div className="container mx-auto p-4 bg-gray-100 min-h-screen flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+              <div className="flex items-center mb-4">
+                <svg
+                  className="w-6 h-6 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h2 className="text-2xl font-bold text-blue-700">CONNEXION</h2>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label className="block text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    value={credentials.login}
+                    onChange={(e) =>
+                      setCredentials({ ...credentials, login: e.target.value })
+                    }
+                    className="w-full p-2 border rounded mt-1"
+                    placeholder="noumatekpoyaw@gmail.com"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">Mot de passe</label>
+                  <input
+                    type="password"
+                    value={credentials.password}
+                    onChange={(e) =>
+                      setCredentials({
+                        ...credentials,
+                        password: e.target.value,
+                      })
+                    }
+                    className="w-full p-2 border rounded mt-1"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-blue-700 text-white w-full py-2 rounded hover:bg-blue-800"
+                >
+                  Se connecter
+                </button>
+                <div className="text-center mt-4 text-sm">
+                  <a href="#" className="text-blue-600 hover:underline">
+                    Mot de passe oublié ?
+                  </a>
+                  <p className="mt-2">
+                    Pas de compte ?{" "}
+                    <a
+                      href="#/register"
+                      className="text-blue-600 hover:underline"
+                    >
+                      S'inscrire
+                    </a>
+                  </p>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      // Register Component
+      const Register = ({ navigate }) => {
+        const [formData, setFormData] = useState({
+          nom_client: "",
+          mail_client: "",
+          mot_passe_client: "",
+        });
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          try {
+            await axios.post("/api/auth/register", {
+              ...formData,
+              role: "client",
+            });
+            alert("Registration successful! Please log in.");
+            navigate("/login");
+          } catch (error) {
+            console.error("Registration failed:", error);
+            alert("Registration failed");
+          }
+        };
+        return (
+          <div className="container mx-auto p-4 bg-gray-100 min-h-screen flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+              <div className="flex items-center mb-4">
+                <svg
+                  className="w-6 h-6 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+                <h2 className="text-2xl font-bold text-blue-700">
+                  INSCRIPTION
+                </h2>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label className="block text-gray-700">Nom</label>
+                  <input
+                    type="text"
+                    value={formData.nom_client}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nom_client: e.target.value })
+                    }
+                    className="w-full p-2 border rounded mt-1"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    value={formData.mail_client}
+                    onChange={(e) =>
+                      setFormData({ ...formData, mail_client: e.target.value })
+                    }
+                    className="w-full p-2 border rounded mt-1"
+                    placeholder="noumatekpoyaw@gmail.com"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-700">Mot de passe</label>
+                  <input
+                    type="password"
+                    value={formData.mot_passe_client}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        mot_passe_client: e.target.value,
+                      })
+                    }
+                    className="w-full p-2 border rounded mt-1"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-blue-700 text-white w-full py-2 rounded hover:bg-blue-800"
+                >
+                  S'inscrire
+                </button>
+                <div className="text-center mt-4 text-sm">
+                  <p>
+                    Déjà un compte ?{" "}
+                    <a href="#/login" className="text-blue-600 hover:underline">
+                      Se connecter
+                    </a>
+                  </p>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      // VoyageList Component
+      const VoyageList = () => {
+        const [voyages, setVoyages] = useState([]);
+        useEffect(() => {
+          axios
+            .get("/api/voyages")
+            .then((response) => setVoyages(response.data));
+        }, []);
+        return (
+          <div className="container mx-auto p-4">
+            <h2 className="text-2xl mb-4">Available Trips</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {voyages.map((voyage) => (
+                <div key={voyage.id_voyage} className="border p-4 rounded">
+                  <h3>
+                    {voyage.ville_depart} to {voyage.ville_arrivee}
+                  </h3>
+                  <p>Departure: {voyage.date_depart}</p>
+                  <p>Transport: {voyage.moyen_transport}</p>
+                  <p>Price: ${voyage.prix_voyage}</p>
+                  <p>Seats: {voyage.place_disponible}</p>
+                  <a
+                    href={`#/reserve/${voyage.id_voyage}`}
+                    className="bg-blue-500 text-white p-2 rounded"
+                  >
+                    Book Now
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      // ReservationForm Component
+      const ReservationForm = ({ voyageId }) => {
+        const { user } = useContext(AuthContext);
+        const [formData, setFormData] = useState({
+          id_type_billet: "",
+          nombre_de_reserve: 1,
+        });
+        const [types, setTypes] = useState([]);
+        useEffect(() => {
+          axios
+            .get("/api/type_billets")
+            .then((response) => setTypes(response.data));
+        }, []);
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          try {
+            await axios.post(
+              "/api/reservations",
+              {
+                id_client: user.id_client,
+                id_voyage: voyageId,
+                id_type_billet: formData.id_type_billet,
+                nombre_de_reserve: formData.nombre_de_reserve,
+                date_reservation: new Date().toISOString(),
+              },
+              { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            alert("Reservation successful!");
+          } catch (error) {
+            console.error("Reservation failed:", error);
+            alert("Reservation failed");
+          }
+        };
+        return (
+          <div className="container mx-auto p-4">
+            <h2 className="text-2xl mb-4">Book a Trip</h2>
+            <form onSubmit={handleSubmit} className="max-w-md">
+              <select
+                value={formData.id_type_billet}
+                onChange={(e) =>
+                  setFormData({ ...formData, id_type_billet: e.target.value })
+                }
+                className="w-full p-2 mb-2 border rounded"
+              >
+                <option value="">Select Ticket Type</option>
+                {types.map((type) => (
+                  <option key={type.id_type_billet} value={type.id_type_billet}>
+                    {type.libelle_type_billet}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min="1"
+                placeholder="Number of Tickets"
+                value={formData.nombre_de_reserve}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    nombre_de_reserve: e.target.value,
+                  })
+                }
+                className="w-full p-2 mb-2 border rounded"
+              />
+              <button
+                type="submit"
+                className="bg-blue-500 text-white p-2 rounded w-full"
+              >
+                Reserve
+              </button>
+            </form>
+          </div>
+        );
+      };
+
+      // ReservationHistory Component
+      const ReservationHistory = () => {
+        const { user } = useContext(AuthContext);
+        const [reservations, setReservations] = useState([]);
+        useEffect(() => {
+          axios
+            .get(`/api/reservations/client/${user.id_client}`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            })
+            .then((response) => setReservations(response.data));
+        }, [user]);
+        const cancelReservation = async (id_reservation) => {
+          try {
+            await axios.delete(`/api/reservations/${id_reservation}`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            });
+            setReservations(
+              reservations.filter((r) => r.id_reservation !== id_reservation)
+            );
+            alert("Reservation cancelled");
+          } catch (error) {
+            console.error("Cancellation failed:", error);
+            alert("Cancellation failed");
+          }
+        };
+        return (
+          <div className="container mx-auto p-4">
+            <h2 className="text-2xl mb-4">My Reservations</h2>
+            <div className="space-y-4">
+              {reservations.map((reservation) => {
+                const canCancel =
+                  (new Date() - new Date(reservation.date_reservation)) /
+                    1000 /
+                    60 <=
+                  5;
+                return (
+                  <div
+                    key={reservation.id_reservation}
+                    className="border p-4 rounded"
+                  >
+                    <p>Voyage ID: {reservation.id_voyage}</p>
+                    <p>Date: {reservation.date_depart}</p>
+                    <p>Tickets: {reservation.nombre_de_reserve}</p>
+                    <p>Total: ${reservation.montant_total}</p>
+                    {canCancel && (
+                      <button
+                        onClick={() =>
+                          cancelReservation(reservation.id_reservation)
+                        }
+                        className="bg-red-500 text-white p-2 rounded"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      };
+
+      // AdminPanel Component
+      const AdminPanel = () => {
+        const { user } = useContext(AuthContext);
+        const [reservations, setReservations] = useState([]);
+        const [clients, setClients] = useState([]);
+        useEffect(() => {
+          axios
+            .get("/api/reservations", {
+              headers: { Authorization: `Bearer ${user.token}` },
+            })
+            .then((response) => setReservations(response.data));
+          axios
+            .get("/api/clients", {
+              headers: { Authorization: `Bearer ${user.token}` },
+            })
+            .then((response) => setClients(response.data));
+        }, [user]);
+        const approveReservation = async (id_reservation) => {
+          try {
+            await axios.put(
+              `/api/reservations/${id_reservation}/approve`,
+              {},
+              {
+                headers: { Authorization: `Bearer ${user.token}` },
+              }
+            );
+            alert("Reservation approved");
+          } catch (error) {
+            console.error("Approval failed:", error);
+            alert("Approval failed");
+          }
+        };
+        const deleteReservation = async (id_reservation) => {
+          try {
+            await axios.delete(`/api/reservations/${id_reservation}`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            });
+            setReservations(
+              reservations.filter((r) => r.id_reservation !== id_reservation)
+            );
+            alert("Reservation deleted");
+          } catch (error) {
+            console.error("Deletion failed:", error);
+            alert("Deletion failed");
+          }
+        };
+        const deleteClient = async (id_client) => {
+          try {
+            await axios.delete(`/api/clients/${id_client}`, {
+              headers: { Authorization: `Bearer ${user.token}` },
+            });
+            setClients(clients.filter((c) => c.id_client !== id_client));
+            alert("Client deleted");
+          } catch (error) {
+            console.error("Deletion failed:", error);
+            alert("Deletion failed");
+          }
+        };
+        return (
+          <div className="container mx-auto p-4">
+            <h2 className="text-2xl mb-4">Admin Panel</h2>
+            <h3 className="text-xl mb-2">Reservations</h3>
+            <div className="space-y-4">
+              {reservations.map((reservation) => (
+                <div
+                  key={reservation.id_reservation}
+                  className="border p-4 rounded"
+                >
+                  <p>Reservation ID: {reservation.id_reservation}</p>
+                  <p>Client ID: {reservation.id_client}</p>
+                  <p>Voyage ID: {reservation.id_voyage}</p>
+                  <p>Status: {reservation.status || "Pending"}</p>
+                  <button
+                    onClick={() =>
+                      approveReservation(reservation.id_reservation)
+                    }
+                    className="bg-green-500 text-white p-2 rounded mr-2"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() =>
+                      deleteReservation(reservation.id_reservation)
+                    }
+                    className="bg-red-500 text-white p-2 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+            <h3 className="text-xl mb-2 mt-4">Clients</h3>
+            <div className="space-y-4">
+              {clients.map((client) => (
+                <div key={client.id_client} className="border p-4 rounded">
+                  <p>
+                    Name: {client.nom_client} {client.prenom_client}
+                  </p>
+                  <p>Email: {client.mail_client}</p>
+                  <button
+                    onClick={() => deleteClient(client.id_client)}
+                    className="bg-red-500 text-white p-2 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      // Contact Component
+      const Contact = () => (
+        <div className="container mx-auto p-4 bg-gray-100 min-h-screen flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+            <h2 className="text-2xl font-bold text-center mb-4">Contact Us</h2>
+            <p className="text-center">
+              Contact information will be added here.
+            </p>
+          </div>
+        </div>
+      );
+
+      // Main App Component with Routing
+      const App = () => {
+        const [route, setRoute] = useState(
+          window.location.hash.slice(1) || "/"
+        );
+        const { user } = useContext(AuthContext);
+        useEffect(() => {
+          const handleHashChange = () =>
+            setRoute(window.location.hash.slice(1));
+          window.addEventListener("hashchange", handleHashChange);
+          return () =>
+            window.removeEventListener("hashchange", handleHashChange);
+        }, []);
+        const navigate = (path) => {
+          window.location.hash = path;
+          setRoute(path);
+        };
+        if (!user && route !== "/login" && route !== "/register") {
+          navigate("/login");
+          return null;
+        }
+        return (
+          <div>
+            <Navbar />
+            {route === "/" && <Home navigate={navigate} />}
+            {route === "/login" && <Login navigate={navigate} />}
+            {route === "/register" && <Register navigate={navigate} />}
+            {route === "/voyages" && user?.role === "client" && <VoyageList />}
+            {route.startsWith("/reserve/") && user?.role === "client" && (
+              <ReservationForm voyageId={route.split("/")[2]} />
+            )}
+            {route === "/reservations" && user?.role === "client" && (
+              <ReservationHistory />
+            )}
+            {route === "/admin" && user?.role === "admin" && <AdminPanel />}
+            {route === "/contact" && <Contact />}
+          </div>
+        );
+      };
+
+      // Render the App
+      ReactDOM.render(
+        <AuthProvider>
+          <App />
+        </AuthProvider>,
+        document.getElementById("root")
+      );
+    </script>
+  </body>
+</html>
