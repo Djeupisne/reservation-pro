@@ -1,14 +1,14 @@
-# Image Java officielle
-FROM openjdk:17-jdk-slim
-
-# Répertoire de travail
+# Stage 1: Build
+FROM eclipse-temurin:17-jdk-slim AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN apt-get update && apt-get install -y maven
+RUN mvn clean package -DskipTests
 
-# Copier le JAR généré
-COPY target/*.jar app.jar
-
-# Exposer le port
+# Stage 2: Runtime
+FROM eclipse-temurin:17-jre-slim
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-
-# Commande de démarrage
 ENTRYPOINT ["java", "-jar", "app.jar"]
