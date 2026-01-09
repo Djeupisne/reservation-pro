@@ -4,10 +4,10 @@ FROM openjdk:17-jdk-slim
 # Répertoire de travail
 WORKDIR /app
 
-# Copie du JAR généré
+# Copier le JAR généré
 COPY target/*.jar app.jar
 
-# Expose le port
+# Exposer le port
 EXPOSE 8080
 
 # Commande de démarrage
