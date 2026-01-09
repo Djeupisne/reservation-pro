@@ -1,5 +1,5 @@
 # Image Java officielle Eclipse Temurin
-FROM eclipse-temurin:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 
 # Répertoire de travail
 WORKDIR /app
