@@ -1,5 +1,5 @@
-# Image Java officielle Eclipse Temurin
-FROM eclipse-temurin:17-jdk-jammy
+# Image Java Amazon Corretto
+FROM amazoncorretto:17-alpine
 
 # Répertoire de travail
 WORKDIR /app
